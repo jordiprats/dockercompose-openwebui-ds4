@@ -1,4 +1,4 @@
-# ds4 openwebui
+# ds4 ROCm with openwebui as interface
 
 - Log into your Open WebUI dashboard as an administrator.
 - Navigate to Settings > Connections.
