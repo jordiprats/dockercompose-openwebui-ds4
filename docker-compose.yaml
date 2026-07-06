@@ -1,0 +1,74 @@
+services:
+  ollama:
+    image: ollama/ollama:rocm
+    container_name: ollama
+    pull_policy: always
+    tty: true
+    restart: unless-stopped
+    environment:
+      # 2. Force ROCm compilation compatibility for RDNA 3.5 (gfx1151)
+      - HSA_OVERRIDE_GFX_VERSION=11.0.0
+      # 3. Enable concurrent user prompts on your 40 iGPU Compute Units
+      - OLLAMA_NUM_PARALLEL=4
+      # 4. Drastically cuts memory/processing overhead for context windows
+      - OLLAMA_FLASH_ATTENTION=1
+      # 5. Keeps models loaded in RAM so you avoid load delay penalties
+      - OLLAMA_KEEP_ALIVE=-1
+      - ENABLE_OPENAI_API_PASSTHROUGH=True
+    # Passes the AMD GPU devices straight into the container
+    devices:
+      - "/dev/kfd:/dev/kfd"
+      - "/dev/dri:/dev/dri"
+    volumes:
+      - /mnt/llm/ollama:/root/.ollama
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    ports:
+      - "3000:8080"
+    environment:
+      - 'OLLAMA_BASE_URL=http://ollama:11434'
+      - 'WEBUI_SECRET_KEY=34607a6014e6587014a9e0e7da6a2be1bf2ae3be7fbce2325613b341337a8cf3'
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    depends_on:
+      - ollama
+      - ds4
+    volumes:
+      - open-webui:/mnt/llm/openwebui/backend
+  ds4:
+    build:
+      context: ./ds4
+      dockerfile: Dockerfile
+      args:
+        DS4_REPO_URL: https://github.com/antirez/ds4
+        DS4_REF: main
+    container_name: ds4
+    restart: unless-stopped
+    environment:
+      - HSA_OVERRIDE_GFX_VERSION=11.5.1
+    devices:
+      - "/dev/kfd:/dev/kfd"
+      - "/dev/dri:/dev/dri"
+    group_add:
+      - video
+      - render
+    volumes:
+      - /home/jprats/ds4/gguf:/models
+    ports:
+      - "8000:8000"
+    command:
+      - "-m"
+      - "/models/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8000"
+
+
+volumes:
+  ollama: {}
+  open-webui: {}
+
