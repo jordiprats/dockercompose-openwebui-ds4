@@ -57,7 +57,7 @@ services:
       - render
     volumes:
       - /home/jprats/ds4/gguf:/models
-      - /mnt/llm/ds4/kv:/kv
+      - /mnt/kvcache:/kv
     ports:
       - "8000:8000"
     command:
@@ -65,10 +65,12 @@ services:
       - "/models/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf"
       - "--ctx"
       - "100000"
+      - "--prefill-chunk"
+      - "4096"
       - "--kv-disk-dir" 
       - "/kv/ds4-kv"
       - "--kv-disk-space-mb"
-      - "32768"
+      - "75000"
       - "--host"
       - "0.0.0.0"
       - "--port"
