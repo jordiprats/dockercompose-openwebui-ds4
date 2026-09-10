@@ -7,8 +7,8 @@ This repository provides a Docker Compose stack to run **[ds4](https://github.co
 ```
 ┌──────────────┐     http://ds4:8000/v1     ┌──────────────┐
 │  Open WebUI  │ ──────────────────────────→│  ds4-server  │
-│  (frontend)  │                             │  (LLM)       │
-└──────────────┘                             └──────────────┘
+│  (frontend)  │                            │  (LLM)       │
+└──────────────┘                            └──────────────┘
        │                                           │
        │ http://ollama:11434                       │ ROCm devices
        ▼                                           ▼
