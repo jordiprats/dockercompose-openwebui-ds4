@@ -90,7 +90,7 @@ Edit `docker-compose.yaml` to match your host paths:
 
 ### 3. Place your GGUF model
 
-Place a GGUF model (e.g., `DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf`) in the directory mapped to `/models` inside the ds4 container.
+Place a GGUF model (e.g., `DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix-0731.gguf`) in the directory mapped to `/models` inside the ds4 container.
 
 ### 4. Start the stack
 
