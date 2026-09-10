@@ -37,7 +37,7 @@ services:
       - ollama
       - ds4
     volumes:
-      - open-webui:/mnt/llm/openwebui/backend
+      - /mnt/llm/openwebui/backend:/app/backend
   ds4:
     build:
       context: ./ds4
@@ -79,5 +79,4 @@ services:
 
 volumes:
   ollama: {}
-  open-webui: {}
 
