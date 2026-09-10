@@ -25,7 +25,9 @@ This repository provides a Docker Compose stack to run **[ds4](https://github.co
 
 ## Services
 
-### 1. Ollama (`ollama`)
+### 1. Ollama (`ollama`) — optional
+
+> **Disabled by default.** Enable with `docker compose --profile ollama up -d`.
 
 - Image: `ollama/ollama:rocm`
 - Optimised for ROCm with `HSA_OVERRIDE_GFX_VERSION=11.0.0`
@@ -79,23 +81,52 @@ git clone <this-repo>
 cd dockercompose-openwebui-ds4
 ```
 
-### 2. Adjust volume paths
+### 2. Configure via `.env`
 
-Edit `docker-compose.yaml` to match your host paths:
+Copy the `.env` file and edit the values to match your host paths and preferences:
 
-- **Ollama** volume: `./mnt/llm/ollama` → your preferred Ollama model directory
-- **Open WebUI** volume: `./mnt/llm/openwebui/backend` → your persistent backend directory
-- **ds4 model** volume: `/home/jprats/ds4/gguf` → directory containing your GGUF model file(s)
-- **KV cache** volume: `/mnt/kvcache` → directory for disk-based KV cache
+```bash
+cp .env .env.local   # or edit .env directly
+```
 
-### 3. Place your GGUF model
+Key variables to customise:
 
-Place a GGUF model (e.g., `DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix-0731.gguf`) in the directory mapped to `/models` inside the ds4 container.
+| Variable | Default | Description |
+|---|---|---|
+| `OLLAMA_VOLUME` | `/mnt/llm/ollama` | Ollama model storage on host |
+| `OPENWEBUI_VOLUME` | `/mnt/llm/openwebui/backend` | Open WebUI backend persistence |
+| `DS4_MODEL_DIR` | `/home/jprats/ds4/gguf` | Directory containing your GGUF model |
+| `DS4_MODEL` | `DeepSeek-V4-Flash-...-0731.gguf` | GGUF model filename (path inside container) |
+| `KV_CACHE_DIR` | `/mnt/kvcache` | Directory for disk-based KV cache |
+| `WEBUI_SECRET_KEY` | (set to a fixed key) | Open WebUI secret — change to a random string |
+| `DS4_CTX` | `100000` | Context window size (tokens) |
+| `DS4_KV_DISK_SPACE_MB` | `75000` | Max disk space for KV cache (MB) |
+| `HSA_OVERRIDE_GFX_VERSION_OLLAMA` | `11.0.0` | ROCm target for Ollama |
+| `HSA_OVERRIDE_GFX_VERSION_DS4` | `11.5.1` | ROCm target for ds4 |
+
+### 3. Download the GGUF model
+
+The model is publicly hosted on Hugging Face at [`antirez/deepseek-v4-gguf`](https://huggingface.co/antirez/deepseek-v4-gguf) — **no token required**.
+
+The ds4 repository provides a [`download_model.sh`](https://github.com/antirez/ds4/blob/main/download_model.sh) script you can run inside the container:
+
+```bash
+# Run the download script inside the ds4 container
+# (the script is included in the cloned repo at /build/ds4/download_model.sh)
+docker exec ds4 /build/ds4/download_model.sh ds4f-q2
+```
+
+Or manually download the file and place it in the directory mapped to `/models` (currently `/home/jprats/ds4/gguf` on the host). The 0731 model filename is:
+`DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix-0731.gguf`
 
 ### 4. Start the stack
 
 ```bash
+# Start ds4 + Open WebUI (ollama disabled by default)
 docker compose up -d
+
+# If you also want Ollama:
+docker compose --profile ollama up -d
 ```
 
 The first time ds4 is started, it will **build from source** (this can take a while). Subsequent starts are instant.
@@ -113,7 +144,7 @@ Now you can chat using the ds4 model via Open WebUI.
 
 ### 6. (Optional) Use Ollama models
 
-Open WebUI already connects to Ollama by default (`OLLAMA_BASE_URL`). Pull models as usual:
+If you enabled Ollama (via `--profile ollama`), Open WebUI connects to it via `OLLAMA_BASE_URL`. Pull models as usual:
 
 ```bash
 docker exec -it ollama ollama pull <model-name>

@@ -1,26 +1,23 @@
 services:
   ollama:
+    profiles:
+      - ollama
     image: ollama/ollama:rocm
     container_name: ollama
     pull_policy: always
     tty: true
     restart: unless-stopped
     environment:
-      # 2. Force ROCm compilation compatibility for RDNA 3.5 (gfx1151)
-      - HSA_OVERRIDE_GFX_VERSION=11.0.0
-      # 3. Enable concurrent user prompts on your 40 iGPU Compute Units
-      - OLLAMA_NUM_PARALLEL=4
-      # 4. Drastically cuts memory/processing overhead for context windows
-      - OLLAMA_FLASH_ATTENTION=1
-      # 5. Keeps models loaded in RAM so you avoid load delay penalties
-      - OLLAMA_KEEP_ALIVE=-1
+      - HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION_OLLAMA:-11.0.0}
+      - OLLAMA_NUM_PARALLEL=${OLLAMA_NUM_PARALLEL:-4}
+      - OLLAMA_FLASH_ATTENTION=${OLLAMA_FLASH_ATTENTION:-1}
+      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:--1}
       - ENABLE_OPENAI_API_PASSTHROUGH=True
-    # Passes the AMD GPU devices straight into the container
     devices:
       - "/dev/kfd:/dev/kfd"
       - "/dev/dri:/dev/dri"
     volumes:
-      - /mnt/llm/ollama:/root/.ollama
+      - ${OLLAMA_VOLUME:-/mnt/llm/ollama}:/root/.ollama
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
@@ -29,15 +26,14 @@ services:
       - "3000:8080"
     environment:
       - 'OLLAMA_BASE_URL=http://ollama:11434'
-      - 'WEBUI_SECRET_KEY=34607a6014e6587014a9e0e7da6a2be1bf2ae3be7fbce2325613b341337a8cf3'
+      - 'WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-34607a6014e6587014a9e0e7da6a2be1bf2ae3be7fbce2325613b341337a8cf3}'
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
     depends_on:
-      - ollama
       - ds4
     volumes:
-      - /mnt/llm/openwebui/backend:/app/backend
+      - ${OPENWEBUI_VOLUME:-/mnt/llm/openwebui/backend}:/app/backend
   ds4:
     build:
       context: ./ds4
@@ -48,7 +44,7 @@ services:
     container_name: ds4
     restart: unless-stopped
     environment:
-      - HSA_OVERRIDE_GFX_VERSION=11.5.1
+      - HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION_DS4:-11.5.1}
     devices:
       - "/dev/kfd:/dev/kfd"
       - "/dev/dri:/dev/dri"
@@ -56,27 +52,25 @@ services:
       - video
       - render
     volumes:
-      - /home/jprats/ds4/gguf:/models
-      - /mnt/kvcache:/kv
+      - ${DS4_MODEL_DIR:-/home/jprats/ds4/gguf}:/models
+      - ${KV_CACHE_DIR:-/mnt/kvcache}:/kv
     ports:
-      - "8000:8000"
+      - "${DS4_PORT:-8000}:8000"
     command:
       - "-m"
-      - "/models/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix-0731.gguf"
+      - "${DS4_MODEL:-/models/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix-0731.gguf}"
       - "--ctx"
-      - "100000"
+      - "${DS4_CTX:-100000}"
       - "--prefill-chunk"
-      - "4096"
-      - "--kv-disk-dir" 
+      - "${DS4_PREFILL_CHUNK:-4096}"
+      - "--kv-disk-dir"
       - "/kv/ds4-kv"
       - "--kv-disk-space-mb"
-      - "75000"
+      - "${DS4_KV_DISK_SPACE_MB:-75000}"
       - "--host"
-      - "0.0.0.0"
+      - "${DS4_HOST:-0.0.0.0}"
       - "--port"
       - "8000"
 
-
 volumes:
   ollama: {}
-
